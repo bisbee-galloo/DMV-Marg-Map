@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🍹 DMV Marg Map — Best Margaritas in DC, MD & VA</title>
+<meta name="description" content="Your definitive guide to the best margaritas in DC, Maryland, and Virginia. Find deals, happy hours, and hidden gems.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --lime: #7ec825;
+    --lime-light: #f0fae0;
+    --lime-mid: #b8e55a;
+    --lime-dark: #4a7a0e;
+    --maroon: #7b1c2e;
+    --maroon-light: #fdf0f2;
+    --maroon-mid: #c44b65;
+    --white: #ffffff;
+    --off-white: #f8f9f5;
+    --silver: #eaecea;
+    --silver-mid: #d0d3cc;
+    --silver-dark: #8a8f85;
+    --text: #1a1d17;
+    --text-muted: #5a5f54;
+    --border: rgba(0,0,0,0.08);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--off-white);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--white);
+    border-bottom: 1px solid var(--silver);
+    padding: 0 24px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    height: 60px;
+    gap: 16px;
+  }
+
+  .header-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+
+  .logo-icon {
+    width: 38px;
+    height: 38px;
+    background: var(--lime);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(126,200,37,0.35);
+    animation: wiggle 3s ease-in-out infinite;
+  }
+
+  @keyframes wiggle {
+    0%,100% { transform: rotate(-3deg); }
+    50% { transform: rotate(3deg); }
+  }
+
+  .logo-text {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 15px;
+    font-weight: 900;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+  }
+
+  .logo-text span {
+    display: block;
+    font-size: 9px;
+    font-weight: 400;
+    color: var(--silver-dark);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .header-filters {
+    margin-left: auto;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .filter-pill {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--silver-mid);
+    background: var(--white);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+  }
+
+  .filter-pill:hover { border-color: var(--lime); color: var(--lime-dark); }
+  .filter-pill.active { background: var(--lime); border-color: var(--lime); color: var(--white); }
+  .filter-pill.deal.active { background: var(--maroon); border-color: var(--maroon); color: var(--white); }
+  .filter-pill.deal:hover { border-color: var(--maroon); color: var(--maroon); }
+
+  .share-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--silver-mid);
+    background: var(--white);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.18s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .share-btn:hover { border-color: var(--text); color: var(--text); }
+
+  /* ── HERO STRIP ── */
+  .hero-strip {
+    background: linear-gradient(135deg, #1a2a0a 0%, #2d4f10 50%, #1a2a0a 100%);
+    padding: 22px 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .hero-strip::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(ellipse at 20% 50%, rgba(126,200,37,0.15) 0%, transparent 60%),
+                      radial-gradient(ellipse at 80% 50%, rgba(123,28,46,0.2) 0%, transparent 60%);
+  }
+
+  .hero-text { position: relative; z-index: 1; }
+
+  .hero-tagline {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 22px;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: -1px;
+    line-height: 1.15;
+  }
+
+  .hero-tagline .accent { color: var(--lime-mid); }
+  .hero-tagline .accent2 { color: #e87a8a; }
+
+  .hero-sub {
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    margin-top: 5px;
+  }
+
+  .hero-stats {
+    margin-left: auto;
+    display: flex;
+    gap: 24px;
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-num {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 26px;
+    font-weight: 900;
+    color: var(--lime-mid);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 3px;
+  }
+
+  /* ── LAYOUT ── */
+  .main-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    height: calc(100vh - 60px - 88px);
+    min-height: 500px;
+  }
+
+  /* ── MAP ── */
+  #map {
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+  }
+
+  .leaflet-popup-content-wrapper {
+    border-radius: 12px !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+    border: 1px solid var(--silver) !important;
+    padding: 0 !important;
+    overflow: hidden;
+  }
+
+  .leaflet-popup-content {
+    margin: 0 !important;
+    width: 220px !important;
+  }
+
+  .leaflet-popup-tip-container { display: none; }
+
+  .popup-inner {
+    padding: 14px 16px;
+  }
+
+  .popup-name {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+
+  .popup-area {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .popup-sig {
+    font-size: 12px;
+    color: var(--text);
+    font-style: italic;
+    line-height: 1.4;
+    border-left: 3px solid var(--lime);
+    padding-left: 8px;
+    margin-bottom: 8px;
+  }
+
+  .popup-deal {
+    background: var(--maroon-light);
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 11px;
+    color: var(--maroon);
+    font-weight: 500;
+    margin-bottom: 8px;
+    display: flex;
+    gap: 5px;
+    align-items: flex-start;
+  }
+
+  .popup-price {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--lime-dark);
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    background: var(--white);
+    border-left: 1px solid var(--silver);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-header {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--silver);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: var(--white);
+    z-index: 2;
+  }
+
+  .sidebar-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .sidebar-count {
+    font-size: 12px;
+    color: var(--silver-dark);
+    background: var(--silver);
+    border-radius: 10px;
+    padding: 2px 9px;
+  }
+
+  /* ── SPOT CARDS ── */
+  .spot-card {
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--silver);
+    cursor: pointer;
+    transition: background 0.12s;
+    display: flex;
+    gap: 11px;
+    align-items: flex-start;
+    animation: slideIn 0.3s ease forwards;
+    opacity: 0;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(12px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .spot-card:hover { background: var(--off-white); }
+  .spot-card.active { background: var(--lime-light); border-left: 3px solid var(--lime); }
+
+  .spot-rank {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--silver);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    margin-top: 1px;
+    font-family: 'Unbounded', sans-serif;
+  }
+
+  .spot-rank.deal {
+    background: var(--maroon);
+    color: var(--white);
+    font-size: 13px;
+  }
+
+  .spot-body { flex: 1; min-width: 0; }
+
+  .spot-name {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .spot-area {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+
+  .spot-sig {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 4px;
+    line-height: 1.35;
+  }
+
+  .spot-tags {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+
+  .tag {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+  }
+
+  .tag-type { background: var(--silver); color: var(--text-muted); }
+  .tag-deal { background: var(--maroon-light); color: var(--maroon); }
+  .tag-region { background: var(--lime-light); color: var(--lime-dark); }
+
+  .spot-right {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .spot-price {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--lime-dark);
+  }
+
+  .spot-region-badge {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--silver-dark);
+    margin-top: 3px;
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty {
+    padding: 48px 24px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+  .empty-icon { font-size: 36px; margin-bottom: 10px; }
+  .empty-msg { font-weight: 500; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--text);
+    color: var(--white);
+    padding: 11px 22px;
+    border-radius: 24px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 9999;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    white-space: nowrap;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── CUSTOM MARKERS ── */
+  .marker-pin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+    transition: transform 0.2s;
+  }
+
+  .marker-inner {
+    transform: rotate(45deg);
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .main-layout {
+      grid-template-columns: 1fr;
+      grid-template-rows: 55vh 1fr;
+      height: auto;
+    }
+    .hero-stats { display: none; }
+    .hero-tagline { font-size: 16px; }
+    .header-filters { display: none; }
+    .sidebar { max-height: 45vh; }
+  }
+
+  /* Leaflet overrides */
+  .leaflet-control-attribution { font-size: 9px !important; }
+  .leaflet-control-zoom a {
+    border-radius: 8px !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <a class="header-logo" href="#">
+    <div class="logo-icon">🍹</div>
+    <div class="logo-text">
+      DMV MARG MAP
+      <span>DC · MD · VA</span>
+    </div>
+  </a>
+
+  <div class="header-filters">
+    <button class="filter-pill active" onclick="setRegion('all', this)">All DMV</button>
+    <button class="filter-pill" onclick="setRegion('dc', this)">🏛 DC</button>
+    <button class="filter-pill" onclick="setRegion('va', this)">🦅 VA</button>
+    <button class="filter-pill" onclick="setRegion('md', this)">🦀 MD</button>
+    <button class="filter-pill deal" onclick="toggleDeals(this)">★ Deals only</button>
+    <button class="share-btn" onclick="shareLink()">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.499 2.499 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5z"/></svg>
+      Share
+    </button>
+  </div>
+</header>
+
+<!-- HERO STRIP -->
+<div class="hero-strip">
+  <div class="hero-text">
+    <div class="hero-tagline">
+      The <span class="accent">saltiest</span> guide to the <span class="accent2">best margs</span> in the DMV.
+    </div>
+    <div class="hero-sub">Happy hours, hidden gems, and deals worth crossing state lines for. 🧂</div>
+  </div>
+  <div class="hero-stats">
+    <div class="stat">
+      <div class="stat-num" id="statTotal">15</div>
+      <div class="stat-label">Spots</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="statDeals">7</div>
+      <div class="stat-label">Deals</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">3</div>
+      <div class="stat-label">States</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" style="color:#e87a8a">∞</div>
+      <div class="stat-label">Excuses</div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="main-layout">
+  <div id="map"></div>
+
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Top Spots</div>
+      <div class="sidebar-count" id="sidebarCount">15 spots</div>
+    </div>
+    <div id="cardList"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const spots = [
+  {
+    id:1, name:"El Rey", area:"U Street, DC", region:"dc",
+    sig:"The undisputed champ of strong margs — bold, no frills, teleporting levels of potency",
+    type:"Classic", deal:null, price:"$10–12",
+    lat:38.9185, lng:-77.0288,
+    note:"Built from shipping containers. U Street institution."
+  },
+  {
+    id:2, name:"Republic Cantina", area:"Truxton Circle, DC", region:"dc",
+    sig:"Crafted margs with perfect sweet/sour/salty balance",
+    type:"Classic", deal:"Outlaw Hour: $8–10 margs — wkdays 4–6pm + late Fri/Sat 9–11pm", price:"$8–10 HH",
+    lat:38.9116, lng:-77.0116,
+    note:"Best value happy hour in DC. Late-night HH on weekends."
+  },
+  {
+    id:3, name:"Lauriol Plaza", area:"Dupont Circle, DC", region:"dc",
+    sig:"Legendary frozen swirl margs on a legendary rooftop patio",
+    type:"Frozen", deal:null, price:"$13–15",
+    lat:38.9128, lng:-77.0449,
+    note:"Classic DC spot. Rooftop and patio bliss."
+  },
+  {
+    id:4, name:"El Rinconcito II", area:"Columbia Heights, DC", region:"dc",
+    sig:"Best tamarind marg in the city — tangy, sweet-sour, never cloying",
+    type:"Specialty", deal:null, price:"$11",
+    lat:38.9318, lng:-77.0375,
+    note:"Get the nachos. You're welcome."
+  },
+  {
+    id:5, name:"Oyamel", area:"Penn Quarter, DC", region:"dc",
+    sig:"Premium margs + tableside guac — the full José Andrés experience",
+    type:"Premium", deal:null, price:"$16–18",
+    lat:38.8968, lng:-77.0231,
+    note:"Worth the splurge. The guac is made fresh at your table."
+  },
+  {
+    id:6, name:"El Chucho", area:"Columbia Heights, DC", region:"dc",
+    sig:"Mezcal, habanero & blood orange — the most interesting marg in DC",
+    type:"Specialty", deal:"Tuesdays: 20% off all tequila drinks", price:"$12 / $9.60 Tue",
+    lat:38.9296, lng:-77.0380,
+    note:"Creative rotating menu. Tuesday is the move."
+  },
+  {
+    id:7, name:"El Centro D.F.", area:"14th St NW, DC", region:"dc",
+    sig:"Spicy Mango + Yucatan tamarind-chili — bold and unapologetic",
+    type:"Specialty", deal:"Daily happy hour 4–7pm: margs from $5", price:"$5 HH",
+    lat:38.9211, lng:-77.0342,
+    note:"Richard Sandoval spot. Two locations in DC."
+  },
+  {
+    id:8, name:"Guapo's Georgetown", area:"Georgetown, DC", region:"dc",
+    sig:"Classic DMV staple with Potomac waterfront vibes",
+    type:"Classic", deal:null, price:"$11–13",
+    lat:38.9055, lng:-77.0609,
+    note:"30+ years serving the DMV. Patio overlooking the river."
+  },
+  {
+    id:9, name:"Mi Vida", area:"The Wharf, DC", region:"dc",
+    sig:"Upscale waterfront margs that match the views",
+    type:"Premium", deal:null, price:"$15–17",
+    lat:38.8786, lng:-77.0218,
+    note:"The Wharf's best view + best marg combo."
+  },
+  {
+    id:10, name:"El Tamarindo", area:"Adams Morgan, DC", region:"dc",
+    sig:"Fruit margs: mango, tamarind, passion fruit — dirt cheap HH",
+    type:"Specialty", deal:"Mon–Fri 4–8pm: original marg $3.50, fruit marg $4.50", price:"$3.50 HH",
+    lat:38.9210, lng:-77.0391,
+    note:"Best budget marg deal in the entire DMV."
+  },
+  {
+    id:11, name:"Taqueria Habanero", area:"Capitol Hill, DC", region:"dc",
+    sig:"Zero gimmicks, all excellence — fresh lime, perfect tang",
+    type:"Classic", deal:null, price:"$11–13",
+    lat:38.8893, lng:-76.9980,
+    note:"Yelp's #1. Readers call it 'incredibly tangy and flavorful.'"
+  },
+  {
+    id:12, name:"Paraiso Taqueria", area:"Capitol Hill, DC", region:"dc",
+    sig:"Coconut-strawberry marg — sounds wild, tastes incredible",
+    type:"Specialty", deal:"One of the best happy hour deals in the city", price:"$11 HH",
+    lat:38.8879, lng:-76.9995,
+    note:"Happy hour is a steal. Trust the coconut-strawberry."
+  },
+  {
+    id:13, name:"Fuego Cocina", area:"Clarendon, VA", region:"va",
+    sig:"Barrel-aged marg or frozen hibiscus — order the un litro",
+    type:"Specialty", deal:null, price:"$11–14",
+    lat:38.8858, lng:-77.0959,
+    note:"Regular, goblet, or un litro. Always un litro."
+  },
+  {
+    id:14, name:"Guapo's Bethesda", area:"Bethesda, MD", region:"md",
+    sig:"The DMV classic — consistent, crowd-pleasing, never disappoints",
+    type:"Classic", deal:null, price:"$10–12",
+    lat:38.9819, lng:-77.0994,
+    note:"Long-running family brand. 8 locations across the DMV."
+  },
+  {
+    id:15, name:"La Catrina Bar", area:"Bethesda, MD", region:"md",
+    sig:"Lively bar energy, solid margs, DJ nights and $5 specials",
+    type:"Classic", deal:"Frequent $5 marg specials + live DJ events", price:"$5 specials",
+    lat:38.9807, lng:-77.1003,
+    note:"Best party vibes on the MD side."
+  }
+];
+
+// State
+let activeRegion = 'all';
+let dealsOnly = false;
+let activeId = null;
+let markers = {};
+
+// Init map
+const map = L.map('map', {
+  center: [38.92, -77.04],
+  zoom: 12,
+  zoomControl: true
+});
+
+// Clean tile style
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  subdomains: 'abcd',
+  maxZoom: 19
+}).addTo(map);
+
+function makeIcon(spot, isActive) {
+  const color = spot.deal ? '#7b1c2e' : '#7ec825';
+  const size = isActive ? 44 : 38;
+  const emoji = spot.deal ? '★' : '🍹';
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width:${size}px;height:${size}px;
+      background:${color};
+      border-radius:50% 50% 50% 0;
+      transform:rotate(-45deg);
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 3px 12px rgba(0,0,0,0.3);
+      border:2px solid white;
+      transition:all 0.2s;
+    "><span style="transform:rotate(45deg);font-size:${isActive?18:15}px;line-height:1;">${emoji}</span></div>`,
+    iconSize: [size, size],
+    iconAnchor: [size/2, size],
+    popupAnchor: [0, -size]
+  });
+}
+
+function buildPopup(s) {
+  return `<div class="popup-inner">
+    <div class="popup-name">${s.name}</div>
+    <div class="popup-area">${s.area}</div>
+    <div class="popup-sig">"${s.sig}"</div>
+    ${s.deal ? `<div class="popup-deal"><span>★</span><span>${s.deal}</span></div>` : ''}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+      <div class="popup-price">${s.price}</div>
+      <span style="font-size:10px;color:#8a8f85;text-transform:uppercase;letter-spacing:1px;">${s.region.toUpperCase()}</span>
+    </div>
+  </div>`;
+}
+
+// Create all markers
+spots.forEach(s => {
+  const m = L.marker([s.lat, s.lng], { icon: makeIcon(s, false) })
+    .addTo(map)
+    .bindPopup(buildPopup(s), { maxWidth: 240, minWidth: 220 });
+
+  m.on('click', () => {
+    setActive(s.id);
+  });
+
+  markers[s.id] = m;
+});
+
+function setActive(id) {
+  const prev = activeId;
+  activeId = id;
+  if (prev && markers[prev]) markers[prev].setIcon(makeIcon(spots.find(s=>s.id===prev), false));
+  if (markers[id]) {
+    markers[id].setIcon(makeIcon(spots.find(s=>s.id===id), true));
+    markers[id].openPopup();
+  }
+  renderList();
+  const card = document.getElementById('card-'+id);
+  if (card) card.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function filtered() {
+  return spots.filter(s => {
+    if (activeRegion !== 'all' && s.region !== activeRegion) return false;
+    if (dealsOnly && !s.deal) return false;
+    return true;
+  });
+}
+
+function setRegion(r, btn) {
+  activeRegion = r;
+  document.querySelectorAll('.filter-pill:not(.deal)').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updateMarkerVisibility();
+  renderList();
+  fitVisible();
+}
+
+function toggleDeals(btn) {
+  dealsOnly = !dealsOnly;
+  btn.classList.toggle('active', dealsOnly);
+  updateMarkerVisibility();
+  renderList();
+  fitVisible();
+}
+
+function updateMarkerVisibility() {
+  const vis = new Set(filtered().map(s => s.id));
+  spots.forEach(s => {
+    const m = markers[s.id];
+    if (vis.has(s.id)) {
+      if (!map.hasLayer(m)) map.addLayer(m);
+    } else {
+      if (map.hasLayer(m)) map.removeLayer(m);
+    }
+  });
+}
+
+function fitVisible() {
+  const data = filtered();
+  if (!data.length) return;
+  const latlngs = data.map(s => [s.lat, s.lng]);
+  map.fitBounds(L.latLngBounds(latlngs), { padding: [40, 40] });
+}
+
+function renderList() {
+  const data = filtered();
+  const container = document.getElementById('cardList');
+  document.getElementById('sidebarCount').textContent = data.length + ' spot' + (data.length!==1?'s':'');
+  document.getElementById('statTotal').textContent = data.length;
+  document.getElementById('statDeals').textContent = data.filter(s=>s.deal).length;
+
+  if (!data.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">🥲</div><div class="empty-msg">No spots match. Try a different filter.</div></div>`;
+    return;
+  }
+
+  container.innerHTML = data.map((s, i) => `
+    <div class="spot-card${activeId===s.id?' active':''}" id="card-${s.id}" onclick="handleCardClick(${s.id})" style="animation-delay:${i*0.04}s">
+      <div class="spot-rank${s.deal?' deal':''}">${s.deal ? '★' : i+1}</div>
+      <div class="spot-body">
+        <div class="spot-name">${s.name}</div>
+        <div class="spot-area">${s.area}</div>
+        <div class="spot-sig">${s.sig}</div>
+        <div class="spot-tags">
+          <span class="tag tag-type">${s.type}</span>
+          ${s.deal ? `<span class="tag tag-deal">Has deal</span>` : ''}
+        </div>
+      </div>
+      <div class="spot-right">
+        <div class="spot-price">${s.price}</div>
+        <div class="spot-region-badge">${s.region}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function handleCardClick(id) {
+  const s = spots.find(x => x.id === id);
+  if (!s) return;
+  setActive(id);
+  map.setView([s.lat, s.lng], 14, { animate: true });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function shareLink() {
+  const url = window.location.href;
+  if (navigator.share) {
+    navigator.share({ title: 'DMV Marg Map 🍹', text: 'The best margaritas in DC, MD & VA 🧂', url });
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => showToast('✅ Link copied! Send it to your crew 🍹'));
+  } else {
+    showToast('📋 Share this link: ' + url);
+  }
+}
+
+// Initial render
+renderList();
+</script>
+</body>
+</html>
